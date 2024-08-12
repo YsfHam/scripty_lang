@@ -13,18 +13,20 @@ pub enum Operator {
     BitwiseOR,
     BitwiseXOR,
     BitwiseAND,
+    
     BitwiseNOT,
+    UnaryMinus,
+    UnaryPlus,
 
     // Assignement
     Assignement,
-
+    
     // Bool operators
     And,
     Or,
-    Not,
 
-    UnaryMinus,
-    UnaryPlus
+    Not,
+    
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -158,15 +160,17 @@ impl UnaryOperator {
 
 #[derive(Debug, Clone)]
 pub struct AssignementExpression {
+    pub text_pos: TextPosition,
     pub variable: ExpressionId,
     pub expression: ExpressionId,
 }
 
 impl AssignementExpression {
-    pub fn new(variable: ExpressionId, expression: ExpressionId) -> Self {
+    pub fn new(variable: ExpressionId, expression: ExpressionId, text_pos: TextPosition) -> Self {
         Self {
             variable,
-            expression
+            expression,
+            text_pos
         }
     }
 }

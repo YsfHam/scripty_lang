@@ -30,7 +30,7 @@ impl Compiler {
     pub fn get_compilation_unit(&self, code: &str) -> Result<CompilationUnit, DiagnosticsRef> {
 
         let mut ast = Ast::new();
-        let diagnostics = Diagnostics::new().as_ref();
+        let diagnostics = Diagnostics::new(code.to_string()).as_ref();
 
         self.parse(code, &mut ast, DiagnosticsRef::clone(&diagnostics));
         if !diagnostics.borrow().has_errors() {

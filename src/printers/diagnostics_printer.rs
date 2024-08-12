@@ -1,11 +1,9 @@
-use std::{cmp::{max, min}, fmt::{Display, Formatter}};
+use std::{cmp::{max, min}, fmt::Formatter};
 
-use crate::{diagnostics::{Diagnostic, DiagnosticError, DiagnosticErrorType, DiagnosticsRef, UnexpectedTokenError}, lexer::{TextPosition, TokenType}};
+use crate::{diagnostics::{Diagnostic, DiagnosticError}, lexer::TextPosition};
 use colored::Colorize;
 
 pub struct DiagnosticsPrinter<'a> {
-    diagnostics: DiagnosticsRef,
-
     code_lines: Vec<&'a str>
 }
 
@@ -14,51 +12,9 @@ impl<'a> DiagnosticsPrinter<'a> {
     const PRE_HIGHLITED_AREA_MAX_LEN: usize = 20;
     const POST_HIGHLITED_AREA_MAX_LEN: usize = 10;
 
-    pub fn new(diagnostics: DiagnosticsRef, source_code: &'a str) -> Self {
+    pub fn new(source_code: &'a str) -> Self {
         Self {
-            diagnostics,
             code_lines: source_code.lines().collect()
-        }
-    }
-
-    fn display_diagnostic(&self, diagnostic: &Diagnostic, f: &mut Formatter) -> std::fmt::Result {
-        match diagnostic {
-            Diagnostic::Error(diag_error) => {
-                write!(f, "ERROR: ")?;
-                self.display_error(diag_error, f)
-            }
-        }
-    }
-
-    fn display_unexpected_token_error(&self, unexpected_token_error: &UnexpectedTokenError, text_pos: &TextPosition, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "Unexpected token, found '{}' but expects ", unexpected_token_error.actual_token_type)?;
-        Self::display_tokens_types_list(f, &unexpected_token_error.expected_token_types)?;
-        writeln!(f)?;
-        self.highlight_text_area(text_pos, f)
-    }
-
-    fn display_error(&self, diag_error: &DiagnosticError, f: &mut Formatter) -> std::fmt::Result {
-        match &diag_error.error_type {
-            DiagnosticErrorType::UnexpectedToken(unexpected_token_error) => {
-                self.display_unexpected_token_error(unexpected_token_error, &diag_error.error_pos, f)
-            },
-            DiagnosticErrorType::MissmatchedParens => {
-                writeln!(f, "Missmatched parenthese")?;
-                self.highlight_text_area(&diag_error.error_pos, f)
-            },
-            DiagnosticErrorType::MissingOperand => {
-                writeln!(f, "Missing operand")?;
-                self.highlight_text_area(&diag_error.error_pos, f)
-            },
-            DiagnosticErrorType::UnknownToken => {
-                writeln!(f, "Unknown symbole")?;
-                self.highlight_text_area(&diag_error.error_pos, f)
-            }
-            DiagnosticErrorType::UndeclaredVariable => {
-                writeln!(f, "Undeclared variable")?;
-                self.highlight_text_area(&diag_error.error_pos, f)
-            }
-            
         }
     }
 
@@ -81,6 +37,18 @@ impl<'a> DiagnosticsPrinter<'a> {
                 col_end: end as u32,
             }
         )
+    }
+
+    pub fn display_diagnostic(&self, diagnostic: &Diagnostic, f: &mut Formatter) -> std::fmt::Result {
+        match diagnostic {
+            Diagnostic::Error(diagnostic_error) => self.display_diagnostic_error(diagnostic_error, f)
+        }
+    }
+
+    fn display_diagnostic_error(&self, diagnostic_error: &DiagnosticError, f: &mut Formatter) -> std::fmt::Result {
+        writeln!(f, "{}", diagnostic_error.error_message)?;
+        self.highlight_text_area(&diagnostic_error.error_pos, f)?;
+        writeln!(f)
     }
 
     fn next_code_line(&self, start_pos: usize) -> Option<(&str, usize)> {
@@ -125,33 +93,4 @@ impl<'a> DiagnosticsPrinter<'a> {
         Ok(())
     }
 
-    fn display_tokens_types_list(f: &mut Formatter, list: &[TokenType]) -> std::fmt::Result {
-        let mut iter = list.iter();
-
-        write!(f, "[ ")?;
-        write!(f, "{}", iter.next().unwrap())?;
-
-        for token_type in iter {
-            write!(f, ", ")?;
-            write!(f, "{}", token_type)?;
-        }
-
-        write!(f," ]")
-    }
-
-}
-
-impl Display for DiagnosticsPrinter<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.diagnostics
-            .borrow_mut()
-            .diagnostics()
-            .iter()
-            .map(|diag| {
-                self.display_diagnostic(diag, f)?;
-                writeln!(f)
-            })
-            .find(|res| res.is_err())
-            .unwrap_or(Ok(()))
-    }
 }

@@ -9,6 +9,7 @@ const INT_COLOR: Color = Color::Cyan;
 const VARIABLE_COLOR: Color = Color::BrightBlue;
 const KEYWORD_COLOR: Color = Color::Blue;
 const OPERATOR_COLOR: Color = Color::White;
+const PARENTHESE_COLOR: Color = Color::Magenta;
 
 pub struct AstPrinter {
     code_str: Vec<String>,
@@ -57,6 +58,13 @@ impl AstPrinter {
         self.push_colorized("=".to_string(), OPERATOR_COLOR);
     }
     
+    fn push_open_parenthese(&mut self) {
+        self.push_colorized("(".to_string(), PARENTHESE_COLOR);
+    }
+
+    fn push_closed_parenthese(&mut self) {
+        self.push_colorized(")".to_string(), PARENTHESE_COLOR);
+    }
 
 }
 
@@ -120,6 +128,12 @@ impl AstExplorer for AstPrinter {
     
     fn explore_bool_expression(&mut self, value: bool) {
         self.push_keyword(&value.to_string());
+    }
+
+    fn explore_expression(&mut self, ast: &crate::ast::Ast, expression_id: &crate::ast::ExpressionId) {
+        self.push_open_parenthese();
+        self.explore_expression_default(ast, expression_id);
+        self.push_closed_parenthese();
     }
 }
 

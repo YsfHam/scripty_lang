@@ -242,7 +242,7 @@ impl<'a> Lexer<'a> {
 
     fn next_operator_symbole(&mut self) -> (TokenType, String) {
         let mut buffer = String::new();
-        let mut token_text = buffer.clone();
+        let mut token_text = String::new();
         while let Some(&sym) = self.current() {
             if sym.is_whitespace() {
                 break;
@@ -255,7 +255,10 @@ impl<'a> Lexer<'a> {
             else if buffer.len() < 2 {
                 self.consume();
             }
-            else {
+            else if token_text.len() > 0 {
+                break
+            }
+            else{
                 return (TokenType::Unknown, buffer);
             }
         }

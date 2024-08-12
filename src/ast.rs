@@ -126,9 +126,9 @@ impl Ast {
         ))
     }
 
-    pub fn new_assignement_expression(&mut self, variable: ExpressionId, expression: ExpressionId) -> ExpressionId {
+    pub fn new_assignement_expression(&mut self, variable: ExpressionId, expression: ExpressionId, text_pos: TextPosition) -> ExpressionId {
         self.add_expression(Expression::Assignement(
-            AssignementExpression::new(variable, expression)
+            AssignementExpression::new(variable, expression, text_pos)
         ))
     }
 
@@ -161,6 +161,10 @@ pub trait AstExplorer {
     }
 
     fn explore_expression(&mut self, ast: &Ast, expression_id: &ExpressionId) {
+        self.explore_expression_default(ast, expression_id);
+    }
+
+    fn explore_expression_default(&mut self, ast: &Ast, expression_id: &ExpressionId) {
         let expression = ast.get_expression(expression_id).clone();
         match expression {
             Expression::Int(value) => self.explore_int_expression(value),

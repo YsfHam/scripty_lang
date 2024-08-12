@@ -337,7 +337,7 @@ impl ExpresionEvaluator {
                 let left = self.get_stack_value(parser);
                 
                 match op {
-                    Operator::Assignement => self.add_to_output(parser.ast.new_assignement_expression(left, right)),
+                    Operator::Assignement => self.add_to_output(parser.ast.new_assignement_expression(left, right, text_pos)),
                     _ => self.add_to_output(parser.ast.new_binary_operator_expression(op, left, right, text_pos))
                 }
             }

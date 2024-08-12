@@ -1,39 +1,29 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, fmt::Display, rc::Rc};
 
-use crate::lexer::{TextPosition, Token, TokenType};
+use crate::{ast::{expression::{BinaryOperator, UnaryOperator}, resolver::Type}, lexer::{TextPosition, Token, TokenType}, printers::diagnostics_printer::DiagnosticsPrinter};
 
 pub enum Diagnostic {
     Error(DiagnosticError),
 }
 
-pub enum DiagnosticErrorType {
-    UnexpectedToken(UnexpectedTokenError),
-    MissmatchedParens,
-    MissingOperand,
-    UnknownToken,
-    UndeclaredVariable
-}
-
 pub struct DiagnosticError {
-    pub error_type: DiagnosticErrorType,
+    pub error_message: String,
     pub error_pos: TextPosition,
-}
-
-pub struct UnexpectedTokenError {
-    pub actual_token_type: TokenType,
-    pub expected_token_types: Vec<TokenType>,
 }
 
 pub struct Diagnostics {
     diagnostics: Vec<Diagnostic>,
+
+    source_code: String,
 }
 
 pub type DiagnosticsRef = Rc<RefCell<Diagnostics>>;
 
 impl Diagnostics {
-    pub fn new() -> Self {
+    pub fn new(source_code: String) -> Self {
         Self {
             diagnostics: Vec::new(),
+            source_code
         }
     }
 
@@ -45,38 +35,54 @@ impl Diagnostics {
         self.diagnostics.push(diagnostic);
     }
 
-    fn add_diagnostic_error(&mut self, error_type: DiagnosticErrorType, error_pos: TextPosition) {
+    fn add_diagnostic_error(&mut self, error_message: String, error_pos: TextPosition) {
 
         self.add_diagnostic(Diagnostic::Error(DiagnosticError {
             error_pos,
-            error_type
+            error_message
         }));
     }
 
     pub fn unexpected_token_error(&mut self, actual_token: &Token, expected_tokens: &[TokenType]) {
         self.add_diagnostic_error(
-            DiagnosticErrorType::UnexpectedToken(UnexpectedTokenError {
-                expected_token_types: expected_tokens.iter().map(|token_type| *token_type).collect(),
-                actual_token_type: *actual_token.get_type(), 
-            }),
-            actual_token.get_text_pos().clone()
-        );
+            format!("Unexpected token, found '{}' but expects '{:?}'", actual_token.get_type(), expected_tokens),
+        actual_token.get_text_pos().clone());
     }
 
     pub fn missmatched_parens_error(&mut self, text_pos: &TextPosition) {
-        self.add_diagnostic_error(DiagnosticErrorType::MissmatchedParens, text_pos.clone());
+        self.add_diagnostic_error(format!("Missmatched parentheses"), text_pos.clone());
     }
 
     pub fn missing_operand_error(&mut self, text_pos: &TextPosition) {
-        self.add_diagnostic_error(DiagnosticErrorType::MissingOperand, text_pos.clone());
+        self.add_diagnostic_error(format!("Missing operand"), text_pos.clone());
     }
 
     pub fn unknown_token(&mut self, text_pos: &TextPosition) {
-        self.add_diagnostic_error(DiagnosticErrorType::UnknownToken, text_pos.clone());
+        self.add_diagnostic_error(format!("Unknown token"), text_pos.clone());
     }
 
     pub fn undeclared_variable(&mut self, text_pos: &TextPosition) {
-        self.add_diagnostic_error(DiagnosticErrorType::UndeclaredVariable, text_pos.clone());
+        self.add_diagnostic_error(format!("Undeclared variable"), text_pos.clone());
+    }
+
+    pub fn unresolved_binary_expression(&mut self, left: Type, right: Type, binary_operator: &BinaryOperator) {
+        self.add_diagnostic_error(
+            format!("Incompatible types '{:?}', '{:?}' for operator {:?}", left, right, binary_operator.operator),
+            binary_operator.text_pos.clone()
+        )
+    }
+
+    pub fn unresolved_unary_expression(&mut self, expr_type: Type, unary_operator: &UnaryOperator) {
+        self.add_diagnostic_error(
+            format!("Incompatible type {:?} with operator {:?}", expr_type, unary_operator.operator),
+             unary_operator.text_pos.clone());
+    }
+
+    pub fn incompatible_assignement_types(&mut self, left_type: Type, right_type: Type, error_pos: TextPosition) {
+        self.add_diagnostic_error(
+            format!("Cannot assign type '{:?}' to type '{:?}'", right_type, left_type),
+            error_pos,
+        )
     }
 
     pub fn has_errors(&self) -> bool {
@@ -90,4 +96,14 @@ impl Diagnostics {
         &self.diagnostics
     }
 
+}
+
+impl Display for Diagnostics {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let diagnostics_printer = DiagnosticsPrinter::new(&self.source_code);
+        for diagnostic in &self.diagnostics {
+            diagnostics_printer.display_diagnostic(&diagnostic, f)?;
+        }
+        Ok(())
+    }
 }

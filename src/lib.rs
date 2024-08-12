@@ -1,8 +1,6 @@
 use ast::evaluator::Evaluator;
 use compiler::Compiler;
-use diagnostics::DiagnosticsRef;
 
-use printers::diagnostics_printer::DiagnosticsPrinter;
 
 pub mod lexer;
 pub mod parser;
@@ -15,8 +13,11 @@ pub(crate) mod utils;
 
 pub fn run_program() {
     let input = "
-    let x = true
-    x + 1
+          let x = 4
+          let y = x = 5
+          let c = true && false || true
+
+          z = 4 * 5 /
     ";
 
    let compiler = Compiler::new();
@@ -24,9 +25,7 @@ pub fn run_program() {
    let mut evaluator = Evaluator::new();
 
    compiler.compile(input, &mut evaluator, |diagnostics| {
-        let diagnostics_printer = DiagnosticsPrinter::new(DiagnosticsRef::clone(diagnostics), input);
-
-        println!("{diagnostics_printer}");
+     println!("{}", diagnostics.borrow());
    });
 
    println!("{:?}", evaluator.value);

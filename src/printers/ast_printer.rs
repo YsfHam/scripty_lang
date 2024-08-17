@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use colored::{Color, Colorize};
 
-use crate::ast::{expression::{Operator, VariableExpression}, AstExplorer};
+use crate::{ast::{expression::{Operator, VariableExpression}, AstExplorer, AstStorage, ExpressionId}, typing::ExpressionType};
 
 
 const INT_COLOR: Color = Color::Cyan;
@@ -10,6 +10,7 @@ const VARIABLE_COLOR: Color = Color::BrightBlue;
 const KEYWORD_COLOR: Color = Color::Blue;
 const OPERATOR_COLOR: Color = Color::White;
 const PARENTHESE_COLOR: Color = Color::Magenta;
+const TYPE_COLOR: Color = Color::BrightGreen;
 
 pub struct AstPrinter {
     code_str: Vec<String>,
@@ -66,12 +67,20 @@ impl AstPrinter {
         self.push_colorized(")".to_string(), PARENTHESE_COLOR);
     }
 
+    fn push_colon(&mut self) {
+        self.push_colorized(":".to_string(), OPERATOR_COLOR);
+    }
+
+    fn push_type(&mut self, expr_type: ExpressionType) {
+        self.push_colorized(expr_type.to_string(), TYPE_COLOR);
+    }
+
 }
 
 impl AstExplorer for AstPrinter {
 
-    fn explore_statement(&mut self, ast: &crate::ast::Ast, statement_id: &crate::ast::StatementId) {
-        self.explore_statement_default(ast, statement_id);
+    fn explore_statement(&mut self, ast_storage: &mut AstStorage, statement_id: crate::ast::StatementId) {
+        self.explore_statement_default(ast_storage, statement_id);
 
         self.push_newline();
     }
@@ -81,44 +90,51 @@ impl AstExplorer for AstPrinter {
         
     }
 
-    fn explore_binary_operator_expression(&mut self, ast: &crate::ast::Ast, binary_operator: &crate::ast::expression::BinaryOperator) {
-        self.explore_expression(ast, &binary_operator.left);
+    fn explore_binary_operator_expression(&mut self, ast_storage: &mut AstStorage, binary_operator: &crate::ast::expression::BinaryOperator, expression: ExpressionId) {
+        self.push_open_parenthese();
+        self.explore_expression(ast_storage, binary_operator.left);
         self.push_whitespace();
         self.push_operator(&binary_operator.operator);
         self.push_whitespace();
-        self.explore_expression(ast, &binary_operator.right);
+        self.explore_expression(ast_storage, binary_operator.right);
+        self.push_closed_parenthese();
     }
 
-    fn explore_unary_operator_expression(&mut self, ast: &crate::ast::Ast, unary_operator: &crate::ast::expression::UnaryOperator) {
+    fn explore_unary_operator_expression(&mut self, ast_storage: &mut AstStorage, unary_operator: &crate::ast::expression::UnaryOperator, expression: ExpressionId) {
+        self.push_open_parenthese();
         self.push_operator(&unary_operator.operator);
-        self.explore_expression(ast, &unary_operator.expression);
+        self.explore_expression(ast_storage, unary_operator.expression);
+        self.push_closed_parenthese();
     }
 
-    fn explore_variable_expression(&mut self, variable: &VariableExpression) {
-        self.push_identifier(&variable.token.get_value());
+    fn explore_variable_expression(&mut self, ast_storage: &mut AstStorage, variable_expression: &VariableExpression, expression_id: ExpressionId) {
+        self.push_identifier(&variable_expression.token.get_value());
     }
 
-    fn explore_assignement_expression(&mut self, ast: &crate::ast::Ast, assignement_expr: crate::ast::expression::AssignementExpression) {
-        self.explore_expression(ast, &assignement_expr.variable);
+    fn explore_assignement_expression(&mut self, ast_storage: &mut AstStorage, assignement_expr: &crate::ast::expression::AssignementExpression, expression: ExpressionId) {
+        self.explore_expression(ast_storage, assignement_expr.variable);
         self.push_whitespace();
         self.push_equals();
         self.push_whitespace();
-        self.explore_expression(ast, &assignement_expr.expression);
+        self.explore_expression(ast_storage, assignement_expr.expression);
     }
 
-    fn explore_let_statement(&mut self, ast: &crate::ast::Ast, let_statement: &crate::ast::statement::LetStatement) {
+    fn explore_let_statement(&mut self, ast_storage: &mut AstStorage, let_statement: &crate::ast::statement::LetStatement) {
         self.push_keyword("let");
         self.push_whitespace();
         self.push_identifier(&let_statement.identifier_name);
+        self.push_colon();
+        self.push_whitespace();
+        self.push_type(ast_storage.get_expression(let_statement.initializer).expr_type);
         self.push_whitespace();
         self.push_equals();
         self.push_whitespace();
-        self.explore_expression(ast, &let_statement.initializer);
+        self.explore_expression(ast_storage, let_statement.initializer);
         self.push_semicolon();
     }
     
-    fn explore_semicolon_terminated_expression(&mut self, ast: &crate::ast::Ast, expression_id: &crate::ast::ExpressionId) {
-        self.explore_expression(ast, expression_id);
+    fn explore_semicolon_terminated_expression(&mut self, ast_storage: &mut AstStorage, expression_id: crate::ast::ExpressionId) {
+        self.explore_expression(ast_storage, expression_id);
         self.push_semicolon();
     }
 
@@ -128,12 +144,6 @@ impl AstExplorer for AstPrinter {
     
     fn explore_bool_expression(&mut self, value: bool) {
         self.push_keyword(&value.to_string());
-    }
-
-    fn explore_expression(&mut self, ast: &crate::ast::Ast, expression_id: &crate::ast::ExpressionId) {
-        self.push_open_parenthese();
-        self.explore_expression_default(ast, expression_id);
-        self.push_closed_parenthese();
     }
 }
 

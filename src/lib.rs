@@ -8,6 +8,7 @@ pub mod ast;
 pub mod diagnostics;
 pub mod printers;
 pub mod compiler;
+pub mod typing;
 pub(crate) mod utils;
 
 
@@ -15,9 +16,9 @@ pub fn run_program() {
     let input = "
           let x = 4
           let y = x = 5
-          let c = true && false || true
+          let c = true && (false || true)
 
-          z = 4 * 5 /
+          let z = 4 * 5 / 20
     ";
 
    let compiler = Compiler::new();

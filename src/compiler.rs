@@ -55,7 +55,7 @@ impl Compiler {
         where F : FnOnce(&DiagnosticsRef)
     {
         match self.get_compilation_unit(code) {
-            Ok(comp_unit) => {
+            Ok(mut comp_unit) => {
                 comp_unit.ast.explore(ast_explorer);
                 diagnotics_handler(&comp_unit.diagnostics);
             },

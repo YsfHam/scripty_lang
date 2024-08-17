@@ -1,4 +1,4 @@
-use crate::lexer::{TextPosition, Token, TokenType};
+use crate::{lexer::{TextPosition, Token, TokenType}, typing::ExpressionType};
 
 use super::ExpressionId;
 
@@ -189,7 +189,7 @@ impl VariableExpression {
 }
 
 #[derive(Debug, Clone)]
-pub enum Expression {
+pub enum ExpressionKind {
     Int(i32),
     Bool(bool),
     Variable(VariableExpression),
@@ -197,4 +197,24 @@ pub enum Expression {
     BinaryOperator(BinaryOperator),
     UnaryOperator(UnaryOperator),
     Incorrect,
+}
+
+#[derive(Debug, Clone)]
+pub struct Expression {
+    pub kind: ExpressionKind,
+    pub expr_type: ExpressionType
+}
+
+impl Expression {
+    pub fn new(kind: ExpressionKind) -> Self {
+        let expr_type = match kind {
+            ExpressionKind::Int(_) => ExpressionType::Int,
+            ExpressionKind::Bool(_) => ExpressionType::Bool,
+            _ => ExpressionType::Unresolved,
+        };
+        Self {
+            kind,
+            expr_type
+        }
+    }
 }

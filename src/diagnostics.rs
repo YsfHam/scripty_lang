@@ -1,6 +1,8 @@
 use std::{cell::RefCell, fmt::Display, rc::Rc};
 
-use crate::{ast::{expression::{BinaryOperator, UnaryOperator}, resolver::Type}, lexer::{TextPosition, Token, TokenType}, printers::diagnostics_printer::DiagnosticsPrinter};
+use crate::{ast::expression::{BinaryOperator, UnaryOperator}, lexer::{TextPosition, Token, TokenType}, printers::diagnostics_printer::DiagnosticsPrinter};
+
+use crate::typing::ExpressionType;
 
 pub enum Diagnostic {
     Error(DiagnosticError),
@@ -65,20 +67,20 @@ impl Diagnostics {
         self.add_diagnostic_error(format!("Undeclared variable"), text_pos.clone());
     }
 
-    pub fn unresolved_binary_expression(&mut self, left: Type, right: Type, binary_operator: &BinaryOperator) {
+    pub fn unresolved_binary_expression(&mut self, left: ExpressionType, right: ExpressionType, binary_operator: &BinaryOperator) {
         self.add_diagnostic_error(
             format!("Incompatible types '{:?}', '{:?}' for operator {:?}", left, right, binary_operator.operator),
             binary_operator.text_pos.clone()
         )
     }
 
-    pub fn unresolved_unary_expression(&mut self, expr_type: Type, unary_operator: &UnaryOperator) {
+    pub fn unresolved_unary_expression(&mut self, expr_type: ExpressionType, unary_operator: &UnaryOperator) {
         self.add_diagnostic_error(
             format!("Incompatible type {:?} with operator {:?}", expr_type, unary_operator.operator),
              unary_operator.text_pos.clone());
     }
 
-    pub fn incompatible_assignement_types(&mut self, left_type: Type, right_type: Type, error_pos: TextPosition) {
+    pub fn incompatible_assignement_types(&mut self, left_type: ExpressionType, right_type: ExpressionType, error_pos: TextPosition) {
         self.add_diagnostic_error(
             format!("Cannot assign type '{:?}' to type '{:?}'", right_type, left_type),
             error_pos,

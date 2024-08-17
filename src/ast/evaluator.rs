@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::{expression::{Expression, Operator, VariableExpression}, Ast, AstExplorer};
+use super::{expression::{ExpressionKind, Operator, VariableExpression}, AstExplorer, AstStorage, ExpressionId};
 
 #[derive(Copy, Clone, Debug)]
 pub enum Value {
@@ -125,10 +125,10 @@ impl AstExplorer for Evaluator {
         self.value = Some(Value::Int(value));
     }
 
-    fn explore_binary_operator_expression(&mut self, ast: &Ast, binary_operator: &super::expression::BinaryOperator) {
-        self.explore_expression(ast, &binary_operator.left);
+    fn explore_binary_operator_expression(&mut self, ast_storage: &mut AstStorage, binary_operator: &super::expression::BinaryOperator, _: ExpressionId) {
+        self.explore_expression(ast_storage, binary_operator.left);
         let left_res = self.value.unwrap();
-        self.explore_expression(ast, &binary_operator.right);
+        self.explore_expression(ast_storage, binary_operator.right);
         let right_res = self.value.unwrap();
         let res = match binary_operator.operator {
             Operator::Plus => left_res.add(right_res),
@@ -147,8 +147,8 @@ impl AstExplorer for Evaluator {
         self.value = Some(res);
     }
     
-    fn explore_unary_operator_expression(&mut self, ast: &Ast, unary_operator: &super::expression::UnaryOperator) {
-        self.explore_expression(ast, &unary_operator.expression);
+    fn explore_unary_operator_expression(&mut self, ast_storage: &mut AstStorage, unary_operator: &super::expression::UnaryOperator, _: ExpressionId) {
+        self.explore_expression(ast_storage, unary_operator.expression);
 
         let res = match unary_operator.operator {
             Operator::UnaryMinus => self.value.unwrap().unary_minus().unwrap(),
@@ -162,33 +162,33 @@ impl AstExplorer for Evaluator {
         self.value = Some(res);
     }
     
-    fn explore_variable_expression(&mut self, variable_expression: &VariableExpression) {
+    fn explore_variable_expression(&mut self, _: &mut AstStorage, variable_expression: &VariableExpression, _: ExpressionId) {
         let name = variable_expression.token.get_value();
         let value = self.symbols_table.get(name).unwrap();
         self.value = Some(*value);
 
     }
     
-    fn explore_assignement_expression(&mut self, ast: &Ast, assignement_expr: super::expression::AssignementExpression) {
+    fn explore_assignement_expression(&mut self, ast_storage: &mut AstStorage, assignement_expr: &super::expression::AssignementExpression, _: ExpressionId) {
 
-        let expr = ast.get_expression(&assignement_expr.variable);
-        let variable_name = match expr {
-            Expression::Variable(name) => Some(name),
+        let expr_kind = ast_storage.get_expression(assignement_expr.variable).kind.clone();
+        let variable_name = match expr_kind {
+            ExpressionKind::Variable(name) => Some(name),
             _ => None,
         }.expect("Incorrect l_value");
 
-        self.explore_expression(ast, &assignement_expr.expression);
+        self.explore_expression(ast_storage, assignement_expr.expression);
 
         self.symbols_table.insert(variable_name.token.get_value().clone(), self.value.unwrap());
     }
     
-    fn explore_let_statement(&mut self, ast: &Ast, let_statement: &super::statement::LetStatement) {
-        self.explore_expression(ast, &let_statement.initializer);
+    fn explore_let_statement(&mut self, ast_storage: &mut AstStorage, let_statement: &super::statement::LetStatement) {
+        self.explore_expression(ast_storage, let_statement.initializer);
         self.symbols_table.insert(let_statement.identifier_name.clone(), self.value.unwrap());
     }
     
-    fn explore_semicolon_terminated_expression(&mut self, ast: &Ast, expression_id: &super::ExpressionId) {
-        self.explore_expression(ast, expression_id);
+    fn explore_semicolon_terminated_expression(&mut self, ast_storage: &mut AstStorage, expression_id: super::ExpressionId) {
+        self.explore_expression(ast_storage, expression_id);
     }
     
     fn explore_bool_expression(&mut self, value: bool) {

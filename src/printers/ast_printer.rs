@@ -90,7 +90,7 @@ impl AstExplorer for AstPrinter {
         
     }
 
-    fn explore_binary_operator_expression(&mut self, ast_storage: &mut AstStorage, binary_operator: &crate::ast::expression::BinaryOperator, expression: ExpressionId) {
+    fn explore_binary_operator_expression(&mut self, ast_storage: &mut AstStorage, binary_operator: &crate::ast::expression::BinaryOperator, _: ExpressionId) {
         self.push_open_parenthese();
         self.explore_expression(ast_storage, binary_operator.left);
         self.push_whitespace();
@@ -100,18 +100,18 @@ impl AstExplorer for AstPrinter {
         self.push_closed_parenthese();
     }
 
-    fn explore_unary_operator_expression(&mut self, ast_storage: &mut AstStorage, unary_operator: &crate::ast::expression::UnaryOperator, expression: ExpressionId) {
+    fn explore_unary_operator_expression(&mut self, ast_storage: &mut AstStorage, unary_operator: &crate::ast::expression::UnaryOperator, _: ExpressionId) {
         self.push_open_parenthese();
         self.push_operator(&unary_operator.operator);
         self.explore_expression(ast_storage, unary_operator.expression);
         self.push_closed_parenthese();
     }
 
-    fn explore_variable_expression(&mut self, ast_storage: &mut AstStorage, variable_expression: &VariableExpression, expression_id: ExpressionId) {
+    fn explore_variable_expression(&mut self, _: &mut AstStorage, variable_expression: &VariableExpression, _: ExpressionId) {
         self.push_identifier(&variable_expression.token.get_value());
     }
 
-    fn explore_assignement_expression(&mut self, ast_storage: &mut AstStorage, assignement_expr: &crate::ast::expression::AssignementExpression, expression: ExpressionId) {
+    fn explore_assignement_expression(&mut self, ast_storage: &mut AstStorage, assignement_expr: &crate::ast::expression::AssignementExpression, _: ExpressionId) {
         self.explore_expression(ast_storage, assignement_expr.variable);
         self.push_whitespace();
         self.push_equals();

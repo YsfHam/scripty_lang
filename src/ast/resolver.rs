@@ -118,6 +118,7 @@ impl AstResolver {
 impl AstExplorer for AstResolver {
     fn explore_semicolon_terminated_expression(&mut self, ast_storage: &mut AstStorage, expression_id: super::ExpressionId) {
         self.explore_expression(ast_storage, expression_id);
+        ast_storage.get_expression_mut(expression_id).expr_type = ExpressionType::Void;
     }
 
     fn explore_int_expression(&mut self, _: i32) {

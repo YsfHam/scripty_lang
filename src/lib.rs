@@ -14,13 +14,8 @@ pub(crate) mod utils;
 
 pub fn run_program() {
     let input = "
-          let x = 4
-          let y = x = 5
-          let c = true && (false || true)
-
-          let z = 4 * 5 / 20
+    let y = 6;
     ";
-
    let compiler = Compiler::new();
 
    let mut evaluator = Evaluator::new();
